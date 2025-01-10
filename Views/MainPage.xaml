@@ -1,0 +1,15 @@
+﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="iCalendarReminderApp.Views.MainPage"
+             Title="iCalendar Reminder App">
+    <StackLayout>
+        <Button Text="Импортировать iCalendar" Clicked="OnImportClicked" />
+        <ListView ItemsSource="{Binding Events}">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <TextCell Text="{Binding Title}" Detail="{Binding StartTime}" />
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </StackLayout>
+</ContentPage>
