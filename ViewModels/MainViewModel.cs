@@ -1,41 +1,147 @@
 ﻿using System.Collections.ObjectModel;
-using iCalendarReminderApp.Models;
 using iCalendarReminderApp.Services;
+using System.Linq;
+using System.ComponentModel;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System;
 
-namespace iCalendarReminderApp.ViewModels;
-
-public class MainViewModel
+namespace iCalendarReminderApp.ViewModels
 {
-    public ObservableCollection<Event> Events { get; set; }
-
-    private readonly DatabaseService _databaseService;
-    private readonly ICalendarService _iCalendarService;
-
-    public MainViewModel(string dbPath)
+    public class MainViewModel : INotifyPropertyChanged
     {
-        _databaseService = new DatabaseService(dbPath);
-        _iCalendarService = new ICalendarService();
+        public ObservableCollection<IGrouping<DateTime, Event>> GroupedEvents { get; set; }
+        public ObservableCollection<Event> Events { get; set; }
 
-        Events = new ObservableCollection<Event>();
-    }
+        private readonly DatabaseService _databaseService;
+        private readonly ICalendarService _iCalendarService;
 
-    public async Task LoadEventsAsync()
-    {
-        var events = await _databaseService.GetEventsAsync();
-        Events.Clear();
-
-        foreach (var ev in events)
-            Events.Add(ev);
-    }
-
-    public async Task ImportCalendar(string filePath)
-    {
-        var importedEvents = _iCalendarService.ImportFromICalendar(filePath);
-
-        foreach (var ev in importedEvents)
+        public MainViewModel(string dbPath)
         {
-            await _databaseService.SaveEventAsync(ev);
-            Events.Add(ev);
+            _databaseService = new DatabaseService(dbPath);
+            _iCalendarService = new ICalendarService();
+
+            Events = new ObservableCollection<Event>();
+            GroupedEvents = new ObservableCollection<IGrouping<DateTime, Event>>();
         }
+
+        public async Task DeleteEventAsync(Event eventToDelete)
+        {
+            try
+            {
+                // Удаляем событие из базы данных
+                await _databaseService.DeleteEventAsync(eventToDelete);
+
+                // Перезагружаем все события после удаления, чтобы обновить GroupedEvents
+                await LoadEventsAsync();  // Это обновит GroupedEvents и синхронизирует интерфейс с базой данных
+
+                // Уведомление интерфейса об изменениях
+                OnPropertyChanged(nameof(GroupedEvents));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting event: {ex.Message}");
+                throw new Exception("Error deleting event", ex);  // Генерируем исключение, если не удалось удалить
+            }
+        }
+
+        public async Task LoadEventsAsync()
+        {
+            try
+            {
+                var events = await _databaseService.GetEventsAsync();
+
+                foreach (var ev in events)
+                {
+                    // Лог для проверки, что `Id` у объектов установлен
+                    Console.WriteLine($"Loaded Event: Id={ev.Id}, Title={ev.Title}");
+                }
+
+                var groupedEvents = events
+                    .OrderBy(e => e.StartTime)
+                    .GroupBy(e => e.StartTime.Date)
+                    .ToList();
+
+                GroupedEvents.Clear();
+
+                foreach (var group in groupedEvents)
+                {
+                    GroupedEvents.Add(group);
+                }
+
+                OnPropertyChanged(nameof(GroupedEvents));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading events: {ex.Message}");
+            }
+        }
+
+        public async Task UpdateEventAsync(Event eventToUpdate)
+        {
+            try
+            {
+                await _databaseService.SaveEventAsync(eventToUpdate); // Обновляем запись
+                await LoadEventsAsync(); // Перезагружаем список
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating event: {ex.Message}");
+                throw;
+            }
+        }
+
+
+        public async Task ImportCalendar(string filePath)
+        {
+            var groupedEvents = _iCalendarService.ImportAndGroupByDay(filePath);
+
+            // Сохранение событий в базу данных
+            foreach (var group in groupedEvents)
+            {
+                foreach (var ev in group.Value)
+                {
+                    ev.Id = 0; // Заставляем SQLite присваивать новый идентификатор
+                    await _databaseService.SaveEventAsync(ev);
+                }
+            }
+
+            GroupedEvents.Clear();
+            foreach (var group in groupedEvents)
+            {
+                // Создаем IGrouping из KeyValuePair
+                var groupedByDay = new Grouping<DateTime, Event>(group.Key, group.Value);
+                GroupedEvents.Add(groupedByDay);
+            }
+
+            // Уведомление интерфейса об изменениях
+            OnPropertyChanged(nameof(GroupedEvents));
+        }
+
+        // Реализация INotifyPropertyChanged для обновления UI
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    // Класс Grouping для работы с IGrouping
+    public class Grouping<TKey, TElement> : IGrouping<TKey, TElement>
+    {
+        private readonly IEnumerable<TElement> _elements;
+
+        public Grouping(TKey key, IEnumerable<TElement> elements)
+        {
+            Key = key;
+            _elements = elements;
+        }
+
+        public TKey Key { get; }
+
+        public IEnumerator<TElement> GetEnumerator() => _elements.GetEnumerator();
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }
