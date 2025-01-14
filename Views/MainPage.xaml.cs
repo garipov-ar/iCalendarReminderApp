@@ -113,6 +113,28 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private void OnThemeToggleClicked(object sender, EventArgs e)
+    {
+        var currentTheme = Application.Current.UserAppTheme;
+
+        if (currentTheme == AppTheme.Light)
+        {
+            // Переключаем на темную тему
+            Application.Current.UserAppTheme = AppTheme.Dark;
+
+            // Меняем иконку на солнце
+            ThemeToggleButton.ImageSource = "sun_icon.png"; // Меняем иконку
+        }
+        else
+        {
+            // Переключаем на светлую тему
+            Application.Current.UserAppTheme = AppTheme.Light;
+
+            // Меняем иконку на луну
+            ThemeToggleButton.ImageSource = "moon_icon.png"; // Меняем иконку
+        }
+    }
+
 
     private async void OnDeleteClicked(object sender, EventArgs e)
     {
@@ -149,6 +171,25 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async void OnButtonPressed(object sender, EventArgs e)
+    {
+        var button = sender as Button;
+        if (button != null)
+        {
+            await button.ScaleTo(1.2, 100); // Увеличение кнопки при нажатии
+
+        }
+    }
+
+    private async void OnButtonReleased(object sender, EventArgs e)
+    {
+        var button = sender as Button;
+        if (button != null)
+        {
+            await button.ScaleTo(1, 100); // Восстановление нормального размера
+            
+        }
+    }
 
 
 

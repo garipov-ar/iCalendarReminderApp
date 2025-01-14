@@ -10,7 +10,7 @@ namespace iCalendarReminderApp.Converters
         {
             if (value is DateTime dateTime)
             {
-                return dateTime.ToString("dd MMMM yyyy, HH:mm", culture);
+                return dateTime.ToString("HH:mm", culture);
             }
             return string.Empty;
         }
