@@ -56,6 +56,19 @@ public class DatabaseService
             Console.WriteLine($"Error deleting event from database: {ex.Message}");
         }
     }
-
+    public async Task DeleteAllEventsAsync()
+{
+    try
+    {
+        // Удаляем все события асинхронно
+        await _database.DeleteAllAsync<Event>();
+        Console.WriteLine("All events successfully deleted.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error deleting all events from database: {ex.Message}");
+        throw;
+    }
+}
 
 }

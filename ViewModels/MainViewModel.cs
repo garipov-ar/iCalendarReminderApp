@@ -45,11 +45,17 @@ namespace iCalendarReminderApp.ViewModels
             }
         }
 
-        public async Task LoadEventsAsync()
+        public async Task LoadEventsAsync(bool showPastEvents = false)
         {
             try
             {
                 var events = await _databaseService.GetEventsAsync();
+
+                // Фильтрация событий: показываем только будущие или все события, в зависимости от флага
+                if (!showPastEvents)
+                {
+                    events = events.Where(e => e.StartTime >= DateTime.Now).ToList();
+                }
 
                 foreach (var ev in events)
                 {
@@ -77,6 +83,8 @@ namespace iCalendarReminderApp.ViewModels
             }
         }
 
+
+
         public async Task UpdateEventAsync(Event eventToUpdate)
         {
             try
@@ -91,6 +99,19 @@ namespace iCalendarReminderApp.ViewModels
             }
         }
 
+        public async Task DeleteAllEventsAsync()
+        {
+            try
+            {
+                await _databaseService.DeleteAllEventsAsync();  // Вызов метода для удаления всех событий
+                await LoadEventsAsync();  // Перезагружаем все события
+                OnPropertyChanged(nameof(GroupedEvents));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting all events: {ex.Message}");
+            }
+        }
 
         public async Task ImportCalendar(string filePath)
         {
@@ -105,14 +126,10 @@ namespace iCalendarReminderApp.ViewModels
                     await _databaseService.SaveEventAsync(ev);
                 }
             }
+            await LoadEventsAsync();  // Это обновит GroupedEvents и синхронизирует интерфейс с базой данных
 
-            GroupedEvents.Clear();
-            foreach (var group in groupedEvents)
-            {
-                // Создаем IGrouping из KeyValuePair
-                var groupedByDay = new Grouping<DateTime, Event>(group.Key, group.Value);
-                GroupedEvents.Add(groupedByDay);
-            }
+
+         
 
             // Уведомление интерфейса об изменениях
             OnPropertyChanged(nameof(GroupedEvents));
@@ -126,6 +143,8 @@ namespace iCalendarReminderApp.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
+
+
 
     // Класс Grouping для работы с IGrouping
     public class Grouping<TKey, TElement> : IGrouping<TKey, TElement>

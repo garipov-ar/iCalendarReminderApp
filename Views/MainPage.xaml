@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:iCalendarReminderApp.Converters"
              x:Class="iCalendarReminderApp.Views.MainPage"
-             Title="iCalendar Reminder App">
+             Title="Расписание">
     <ContentPage.Resources>
         <ResourceDictionary>
             <local:DateTimeToStringConverter x:Key="DateTimeConverter" />
@@ -42,19 +42,47 @@
     </ContentPage.Resources>
 
     <ScrollView>
+        
         <StackLayout Padding="10">
-            <StackLayout Orientation="Horizontal" VerticalOptions="Center" HorizontalOptions="Start">
-                <!-- Кнопка для переключения темы -->
-                <Button x:Name="ThemeToggleButton" 
-                    Clicked="OnThemeToggleClicked" 
-                    HorizontalOptions="Start" 
-                    VerticalOptions="Center" 
-                    BackgroundColor="Transparent">      
-                <Button.ImageSource>
-                        <FileImageSource File="moon_icon.png"/>
-                </Button.ImageSource>
-                </Button>
+            <Border>
+                <Grid VerticalOptions="Center" HorizontalOptions="FillAndExpand" 
+          RowDefinitions="Auto, Auto, Auto" ColumnDefinitions="Auto, *, Auto">
+
+                    <!-- Кнопка для переключения темы -->
+                    <Button x:Name="ThemeToggleButton" 
+                Clicked="OnThemeToggleClicked" 
+                HorizontalOptions="Start" 
+                VerticalOptions="Center" 
+                BackgroundColor="Transparent" 
+                Grid.Column="0" Grid.Row="0">
+                        <Button.ImageSource>
+                            <FileImageSource File="sun_icon.png"/>
+                        </Button.ImageSource>
+                    </Button>
+
+                    
+
+                    <!-- Кнопка "Удалить всё" выравнивается по правому краю -->
+                    <Button Text="Удалить всё" 
+                Clicked="OnDeleteAllClicked" 
+                Margin="10" 
+                BackgroundColor="Red" 
+                TextColor="White" 
+                HorizontalOptions="End" 
+                VerticalOptions="Center" 
+                Grid.Column="2" 
+                Grid.Row="0"/>
+                </Grid>
+            </Border>
+            <StackLayout Orientation="Horizontal" Padding="10" VerticalOptions="Start">
+                <CheckBox x:Name="ShowPastEventsCheckBox"
+              IsChecked="False"
+              CheckedChanged="OnShowPastEventsCheckedChanged" />
+                <Label Text="Показывать прошедшие"
+           VerticalOptions="Center"
+           Margin="5,0,0,0" />
             </StackLayout>
+
             <Button Text="Импортировать iCalendar" Clicked="OnImportClicked" Margin="10" />
 
             
@@ -63,6 +91,7 @@
             <!-- CollectionView для сгруппированных событий -->
             <CollectionView ItemsSource="{Binding GroupedEvents}">
                 <CollectionView.ItemTemplate>
+                    
                     <DataTemplate>
                         <StackLayout>
                             <!-- Дата группы -->

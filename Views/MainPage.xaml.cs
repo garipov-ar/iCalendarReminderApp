@@ -113,10 +113,32 @@ public partial class MainPage : ContentPage
         }
     }
 
-    private void OnThemeToggleClicked(object sender, EventArgs e)
+    private async void OnShowPastEventsCheckedChanged(object sender, CheckedChangedEventArgs e)
+    {
+        // Логируем состояние чекбокса для отладки
+        Console.WriteLine($"Чекбокс изменен: {e.Value}");
+
+        bool showPastEvents = e.Value;
+
+        // Обновляем источник данных в зависимости от состояния чекбокса
+        await _viewModel.LoadEventsAsync(showPastEvents);
+    }
+
+
+
+
+    private async void OnThemeToggleClicked(object sender, EventArgs e)
     {
         var currentTheme = Application.Current.UserAppTheme;
 
+        // Анимация кнопки: масштабирование при нажатии
+        await ThemeToggleButton.ScaleTo(1.2, 100, Easing.CubicInOut); // Увеличиваем кнопку
+        await ThemeToggleButton.ScaleTo(1, 100, Easing.CubicInOut);  // Возвращаем в исходный размер
+
+        // Анимация кнопки: плавное исчезновение иконки
+        await ThemeToggleButton.FadeTo(0, 150, Easing.CubicInOut); // Прозрачность кнопки до 0
+
+        // Переключаем тему
         if (currentTheme == AppTheme.Light)
         {
             // Переключаем на темную тему
@@ -124,6 +146,7 @@ public partial class MainPage : ContentPage
 
             // Меняем иконку на солнце
             ThemeToggleButton.ImageSource = "sun_icon.png"; // Меняем иконку
+
         }
         else
         {
@@ -133,6 +156,9 @@ public partial class MainPage : ContentPage
             // Меняем иконку на луну
             ThemeToggleButton.ImageSource = "moon_icon.png"; // Меняем иконку
         }
+
+        // Анимация кнопки: плавное возвращение иконки
+        await ThemeToggleButton.FadeTo(1, 150, Easing.CubicInOut); // Прозрачность кнопки обратно до 1
     }
 
 
@@ -191,6 +217,24 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async void OnDeleteAllClicked(object sender, EventArgs e)
+    {
+        // Подтверждаем удаление всех событий
+        var confirmDelete = await DisplayAlert("Подтверждение", "Вы уверены, что хотите удалить все события?", "Да", "Нет");
+
+        if (confirmDelete)
+        {
+            try
+            {
+                await _viewModel.DeleteAllEventsAsync();  // Вызов метода удаления всех событий
+                await DisplayAlert("Удалено", "Все события были удалены.", "OK");
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Ошибка", $"Произошла ошибка: {ex.Message}", "OK");
+            }
+        }
+    }
 
 
 }
